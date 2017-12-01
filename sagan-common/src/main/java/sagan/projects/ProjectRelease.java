@@ -1,18 +1,41 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package sagan.projects;
 
-import java.util.regex.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.springframework.util.Assert;
+import sagan.projects.support.Version;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Embeddable;
 import javax.persistence.ManyToOne;
-
-import org.springframework.util.Assert;
+import java.util.regex.Pattern;
 
 @Embeddable
+@JsonInclude(Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ProjectRelease implements Comparable<ProjectRelease> {
 
     private static final Pattern PRERELEASE_PATTERN = Pattern.compile("[A-Za-z0-9\\.\\-]+?(M|RC)\\d+");
     private static final String SNAPSHOT_SUFFIX = "SNAPSHOT";
+    private static final String VERSION_PLACEHOLDER = "{version}";
+    private static final String VERSION_PATTERN = Pattern.quote(VERSION_PLACEHOLDER);
 
     public enum ReleaseStatus {
         SNAPSHOT, PRERELEASE, GENERAL_AVAILABILITY;
@@ -45,7 +68,7 @@ public class ProjectRelease implements Comparable<ProjectRelease> {
     public ProjectRelease(String versionName, ReleaseStatus releaseStatus, boolean isCurrent, String refDocUrl,
                           String apiDocUrl, String groupId, String artifactId) {
         setVersion(versionName);
-        if (releaseStatus!=null) {
+        if (releaseStatus != null) {
             this.releaseStatus = releaseStatus;
         }
         this.isCurrent = isCurrent;
@@ -89,7 +112,7 @@ public class ProjectRelease implements Comparable<ProjectRelease> {
         String versionLabel = "";
         if (versionName.contains(".")) {
             versionNumber = versionName.substring(0, versionName.lastIndexOf("."));
-            versionLabel = " " + versionName.substring(versionName.lastIndexOf(".")+1);
+            versionLabel = " " + versionName.substring(versionName.lastIndexOf(".") + 1);
             if (versionLabel.contains("SNAPSHOT") || versionLabel.equals(" RELEASE")) {
                 versionLabel = "";
             }
@@ -98,19 +121,19 @@ public class ProjectRelease implements Comparable<ProjectRelease> {
     }
 
     public String getRefDocUrl() {
-        return refDocUrl;
+        return hasRefDocUrl() ? refDocUrl : "";
     }
 
     public boolean hasRefDocUrl() {
-        return !refDocUrl.isEmpty();
+        return refDocUrl != null && !refDocUrl.isEmpty();
     }
 
     public String getApiDocUrl() {
-        return apiDocUrl;
+        return hasApiDocUrl() ? apiDocUrl : "";
     }
 
     public boolean hasApiDocUrl() {
-        return !apiDocUrl.isEmpty();
+        return apiDocUrl != null && !apiDocUrl.isEmpty();
     }
 
     public String getGroupId() {
@@ -159,44 +182,79 @@ public class ProjectRelease implements Comparable<ProjectRelease> {
         this.repository = repository;
     }
 
+    public void replaceVersionPattern() {
+        String version = getVersion();
+        setApiDocUrl(getApiDocUrl().replaceAll(VERSION_PATTERN, version));
+        setRefDocUrl(getRefDocUrl().replaceAll(VERSION_PATTERN, version));
+    }
+
+    public ProjectRelease createWithVersionPattern() {
+        String version = getVersion();
+        ProjectRelease release = new ProjectRelease(version, releaseStatus, isCurrent, refDocUrl, apiDocUrl, groupId,
+                artifactId);
+        release.setApiDocUrl(getApiDocUrl().replaceAll(version, VERSION_PLACEHOLDER));
+        release.setRefDocUrl(getRefDocUrl().replaceAll(version, VERSION_PLACEHOLDER));
+        return release;
+    }
+
+    /**
+     * Adapted from Gradle's StaticVersionComparator
+     */
     @Override
     public int compareTo(ProjectRelease other) {
-        if (this.getVersion() == null || other.getVersion() == null) {
-            return 0;
-        }
-
-        Pattern pattern = Pattern.compile("([0-9]+)");
-
-        Matcher thisMatcher = pattern.matcher(this.getVersion());
-        Matcher otherMatcher = pattern.matcher(other.getVersion());
-
-        int versionDiff = 0;
-
-        boolean thisFind = thisMatcher.find();
-        boolean otherFind = otherMatcher.find();
-
-        while (thisFind && otherFind) {
-            int thisFoundVersion = Integer.parseInt(thisMatcher.group(0));
-            int otherFoundVersion = Integer.parseInt(otherMatcher.group(0));
-            versionDiff = otherFoundVersion - thisFoundVersion;
-
-            if (versionDiff != 0) {
-                return versionDiff;
-            }
-
-            thisFind = thisMatcher.find();
-            otherFind = otherMatcher.find();
-        }
-
-        if (thisFind) {
+        if (other == null) {
             return -1;
         }
 
-        if (otherFind) {
+        Version thisVersion = Version.build(getVersion());
+        Version otherVersion = Version.build(other.getVersion());
+
+        if (thisVersion == null && otherVersion == null) {
+            return 0;
+        } else if (thisVersion == null) {
+            return -1;
+        } else if (otherVersion == null) {
             return 1;
         }
+        if (thisVersion.equals(otherVersion)) {
+            return 0;
+        }
 
-        return versionDiff;
+        String[] theseParts = thisVersion.getParts();
+        String[] otherParts = otherVersion.getParts();
+
+        int i = 0;
+        for (; i < theseParts.length && i < otherParts.length; i++) {
+            if (theseParts[i].equals(otherParts[i])) {
+                continue;
+            }
+            boolean is1Number = isNumber(theseParts[i]);
+            boolean is2Number = isNumber(otherParts[i]);
+            if (is1Number && !is2Number) {
+                return 1;
+            }
+            if (is2Number && !is1Number) {
+                return -1;
+            }
+            if (is1Number) {
+                return Long.valueOf(theseParts[i]).compareTo(Long.valueOf(otherParts[i]));
+            }
+
+            // both are strings, we compare them lexicographically
+            return theseParts[i].compareTo(otherParts[i]);
+        }
+        if (i < theseParts.length) {
+            return isNumber(theseParts[i]) ? 1 : -1;
+        }
+        if (i < otherParts.length) {
+            return isNumber(otherParts[i]) ? -1 : 1;
+        }
+
+        return 0;
+    }
+
+    private boolean isNumber(String str) {
+        return str.matches("\\d+");
     }
 
     @Override

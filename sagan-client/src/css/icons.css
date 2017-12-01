@@ -143,22 +143,40 @@
   margin-top: 23px;
 }
 .icon.project--logo.logo-spring-cloud {
-    width: 150px;
-    height: 111px;
-    background-position: 253px 955px;
-    margin-top: 13px;
+  width: 150px;
+  height: 111px;
+  background-position: 253px 955px;
+  margin-top: 13px;
 }
 .icon.project--logo.logo-platform {
-    width: 116px;
-    height: 105px;
-    background-position: 675px 957px;
-    margin-top: 23px;
+  width: 116px;
+  height: 105px;
+  background-position: 675px 957px;
+  margin-top: 23px;
 }
 .icon.project--logo.logo-spring-flo {
-    width: 133px;
-    height: 111px;
-    background-position: 133px 1065px;
-    margin-top: 23px;
+  width: 133px;
+  height: 111px;
+  background-position: 133px 1065px;
+  margin-top: 23px;
+}
+.icon.project--logo.logo-spring-kafka {
+  width: 130px;
+  height: 116px;
+  background-position: 817px 1072px;
+  margin-top: 11px;
+}
+.icon.project--logo.logo-spring-restdocs {
+  width: 168px;
+  height: 123px;
+  background-position: 900px 1194px;
+  margin-top: 11px;
+}
+.icon.project--logo.logo-spring-statemachine {
+  width: 105px;
+  height: 125px;
+  background-position: 0px -3px;
+  margin-top: 11px;
 }
 .icon.icon-projects {
   width: 28px;
@@ -199,21 +217,6 @@
   height: 13px;
   width: 46px;
   background-position: 603px 317px;
-}
-.icon.logo-eclipse-text {
-  width: 159px;
-  height: 38px;
-  background-position: 603px 38px;
-}
-.icon.logo-yourkit-text {
-    width: 187px;
-    height: 46px;
-    background-position: 989px 964px;
-}
-.icon.logo-browserstack-text {
-    background-image: url("../img/icon-browserstack-logo.svg");
-    width: 186px;
-    height: 40px;
 }
 .icon.icon-social-twitter {
   width: 36px;

@@ -1,6 +1,5 @@
 package saganx;
 
-import org.springframework.test.context.ActiveProfiles;
 import sagan.SaganProfiles;
 import sagan.blog.support.BlogService;
 import sagan.support.github.StubGithubRestClient;
@@ -10,26 +9,24 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.ConfigFileApplicationContextInitializer;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.web.FilterChainProxy;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static sagan.support.SecurityRequestPostProcessors.*;
-
-@RunWith(SpringJUnit4ClassRunner.class)
-@WebAppConfiguration
-@ContextConfiguration(classes = { IntegrationTestsConfig.class, InMemoryElasticSearchConfig.class },
-                      initializers = ConfigFileApplicationContextInitializer.class)
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = WebEnvironment.MOCK)
+@ContextConfiguration(classes = { IntegrationTestsConfig.class })
 @Transactional
-@ActiveProfiles(profiles = {SaganProfiles.STANDALONE})
+@ActiveProfiles(profiles = { SaganProfiles.STANDALONE })
+@AutoConfigureMockMvc(addFilters = false)
 public abstract class AbstractIntegrationTests {
 
     @Autowired
@@ -44,6 +41,7 @@ public abstract class AbstractIntegrationTests {
     @Autowired
     protected FilterChainProxy springSecurityFilterChain;
 
+    @Autowired
     protected MockMvc mockMvc;
 
     @Autowired
@@ -52,10 +50,6 @@ public abstract class AbstractIntegrationTests {
     @Before
     public void setupMockMvc() {
         stubRestClient.clearResponses();
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac)
-                .addFilters(springSecurityFilterChain)
-                .defaultRequest(get("/").with(csrf()).with(user(123L).roles("ADMIN")))
-                .build();
     }
 
     @After

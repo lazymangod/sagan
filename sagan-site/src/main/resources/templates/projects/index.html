@@ -44,7 +44,7 @@
             <div class="icon project--logo logo-spring-cloud-dataflow"></div>
           </div>
           <div class="project--title">Spring Cloud Data Flow</div>
-          <p class="project--description">A cloud native programming and operating model for composable data microservices on a structured platform.</p>
+          <p class="project--description">An orchestration service for composable data microservice applications on modern runtimes.</p>
         </a>
         <a class="project--container project--container--link"
            th:href="${project.siteUrl}" th:with="project=${projectMetadata.getProject('spring-cloud')}">
@@ -90,6 +90,14 @@
           </div>
           <div class="project--title">Spring HATEOAS</div>
           <p class="project--description">Simplifies creating REST representations that follow the HATEOAS principle.</p>
+        </a>
+        <a th:href="${project.siteUrl}" class="project--container project--container--link" th:if="${projectMetadata.getProject('spring-restdocs')}"
+           th:with="project=${projectMetadata.getProject('spring-restdocs')}">
+          <div class="project-logo--container">
+            <div class="icon project--logo logo-spring-restdocs"></div>
+          </div>
+          <div class="project--title">Spring REST Docs</div>
+          <p class="project--description">Document RESTful services by combining hand-written documentation with auto-generated snippets produced with Spring MVC Test or REST Assured.</p>
         </a>
         <a class="project--container project--container--link"
            th:href="${project.siteUrl}" th:with="project=${projectMetadata.getProject('spring-social')}">
@@ -157,13 +165,6 @@
           <div class="project--title">Spring Shell</div>
           <p class="project--description">Provides a powerful foundation for building command-line apps using a Spring-based programming model.</p>
         </a>
-        <a th:href="${project.siteUrl}" class="project--container project--container--link" th:with="project=${projectMetadata.getProject('spring-xd')}">
-            <div class="project-logo--container">
-                <div class="icon project--logo logo-spring-xd"></div>
-            </div>
-            <div class="project--title">Spring XD</div>
-            <p class="project--description">Simplifies the development of big data applications by addressing ingestion, analytics, batch jobs and data export.</p>
-        </a>
         <a th:href="${project.siteUrl}" class="project--container project--container--link" th:if="${projectMetadata.getProject('spring-flo')}"
            th:with="project=${projectMetadata.getProject('spring-flo')}">
           <div class="project-logo--container">
@@ -171,6 +172,22 @@
           </div>
           <div class="project--title">Spring Flo</div>
           <p class="project--description">A JavaScript library that offers a basic embeddable HTML5 visual builder for pipelines and simple graphs.</p>
+        </a>
+        <a th:href="${project.siteUrl}" class="project--container project--container--link" th:if="${projectMetadata.getProject('spring-kafka')}"
+           th:with="project=${projectMetadata.getProject('spring-kafka')}">
+          <div class="project-logo--container">
+            <div class="icon project--logo logo-spring-kafka"></div>
+          </div>
+          <div class="project--title">Spring Kafka</div>
+          <p class="project--description">Provides Familiar Spring Abstractions for Apache Kafka.</p>
+        </a>
+        <a th:href="${project.siteUrl}" class="project--container project--container--link" th:if="${projectMetadata.getProject('spring-statemachine')}"
+           th:with="project=${projectMetadata.getProject('spring-statemachine')}">
+          <div class="project-logo--container">
+            <div class="icon project--logo logo-spring-statemachine"></div>
+          </div>
+          <div class="project--title">Spring Statemachine</div>
+          <p class="project--description">A framework for application developers to use state machine concepts with Spring applications.</p>
         </a>
       </section>
       <h2 class="index-page--title">Community Projects</h2>
@@ -197,6 +214,10 @@
         <a href="https://github.com/spring-projects/rest-shell#readme" class="project--container project--container--link">
           <div class="project--title">REST Shell</div>
           <p class="project--description">Makes writing and testing RESTful applications easier with CLI-based resource discovery and interaction.</p>
+        </a>
+        <a th:href="${project.siteUrl}" class="project--container project--container--link" th:with="project=${projectMetadata.getProject('spring-xd')}">
+          <div class="project--title">Spring XD</div>
+          <p class="project--description">Simplifies the development of big data applications by addressing ingestion, analytics, batch jobs and data export.</p>
         </a>
       </section>
     </article>

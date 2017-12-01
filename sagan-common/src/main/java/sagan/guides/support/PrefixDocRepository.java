@@ -5,6 +5,7 @@ import sagan.guides.ContentProvider;
 import sagan.guides.DefaultGuideMetadata;
 import sagan.guides.GuideMetadata;
 import sagan.guides.ImageProvider;
+import sagan.projects.Project;
 import sagan.projects.support.ProjectMetadataService;
 import sagan.support.ResourceNotFoundException;
 
@@ -28,23 +29,20 @@ import org.springframework.web.client.RestClientException;
  * Repository implementation providing data access services for guides by repo prefix.
  */
 public abstract class PrefixDocRepository<T extends AbstractGuide> implements DocRepository<T, GuideMetadata>,
-        ContentProvider<T>, ImageProvider {
+        ContentProvider<T>, ImageProvider, ProjectGuidesRepository {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     private static final String REPO_BASE_PATH = "/repos/%s/%s";
     private static final String README_PATH_ASC = REPO_BASE_PATH + "/zipball";
 
-    private final MultiValueMap<String, String> tagMultimap = new LinkedMultiValueMap<>();
     private final GuideOrganization org;
-    private final ProjectMetadataService projectMetadataService;
     private final AsciidoctorUtils asciidoctorUtils = new AsciidoctorUtils();
 
     private String prefix;
 
     public PrefixDocRepository(GuideOrganization org, ProjectMetadataService projectMetadataService, String prefix) {
         this.org = org;
-        this.projectMetadataService = projectMetadataService;
         this.prefix = prefix;
     }
 
@@ -62,9 +60,7 @@ public abstract class PrefixDocRepository<T extends AbstractGuide> implements Do
     public GuideMetadata findMetadata(String tutorial) {
         String repoName = this.prefix + tutorial;
         String description = getRepoDescription(repoName);
-        Set<String> tags = tagMultimap.get(repoName) != null ? new HashSet<>(tagMultimap.get(repoName))
-                : Collections.emptySet();
-        return new DefaultGuideMetadata(org.getName(), tutorial, repoName, description, tags);
+        return new DefaultGuideMetadata(org.getName(), tutorial, repoName, description);
     }
 
     @Override
@@ -73,8 +69,7 @@ public abstract class PrefixDocRepository<T extends AbstractGuide> implements Do
         return org.findRepositoriesByPrefix(this.prefix)
                 .stream()
                 .map(repo -> new DefaultGuideMetadata(org.getName(), repo.getName().replaceAll("^" + this.prefix, ""),
-                        repo.getName(), repo.getDescription(), new HashSet<String>(tagMultimap.getOrDefault(repo
-                                .getName(), Collections.emptyList()))))
+                        repo.getName(), repo.getDescription()))
                 .collect(Collectors.toList());
     }
 
@@ -88,20 +83,22 @@ public abstract class PrefixDocRepository<T extends AbstractGuide> implements Do
                 .collect(Collectors.toList());
     }
 
+    public List<GuideMetadata> findByProject(Project project) {
+        return this.findAllMetadata()
+                .stream()
+                .filter(guideMetadata -> guideMetadata.getProjects().contains(project.getId()))
+                .collect(Collectors.toList());
+    }
+
     @Override
-    public T populate(T tutorial) {
-        String repoName = tutorial.getRepoName();
+    public T populate(T guide) {
+        String repoName = guide.getRepoName();
 
         AsciidocGuide asciidocGuide = asciidoctorUtils.getDocument(org, String.format(README_PATH_ASC, org.getName(),
                 repoName));
-        tagMultimap.merge(repoName, new ArrayList<>(asciidocGuide.getTags()), (source, target) -> {
-            Set<String> tags = new LinkedHashSet<>(target);
-            tags.addAll(source);
-            return new ArrayList<>(tags);
-        });
-        tutorial.setContent(asciidocGuide.getContent());
-        tutorial.setSidebar(asciidoctorUtils.generateDynamicSidebar(projectMetadataService, asciidocGuide));
-        return tutorial;
+		guide.setContent(asciidocGuide.getContent());
+		guide.setTableOfContents(asciidocGuide.getTableOfContents());
+        return guide;
     }
 
     @Override

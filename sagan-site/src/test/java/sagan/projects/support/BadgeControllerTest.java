@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,6 @@
 
 package sagan.projects.support;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,10 +24,16 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import sagan.projects.Project;
 import sagan.projects.ProjectRelease;
 import sagan.projects.ProjectRelease.ReleaseStatus;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Mark Paluch
@@ -56,7 +55,7 @@ public class BadgeControllerTest {
 
         versionBadgeService.postConstruct();
         controller = new BadgeController(projectMetadataServiceMock, versionBadgeService);
-        project = new Project("spring-data-redis", "Spring Data Redis", "http", "http", releases, false, "data");
+        project = new Project("spring-data-redis", "Spring Data Redis", "http", "http", releases, "data");
         when(projectMetadataServiceMock.getProject("spring-data-redis")).thenReturn(project);
     }
 
@@ -122,14 +121,15 @@ public class BadgeControllerTest {
     }
 
     @Test
-    public void projecWithTwoReleasesUsingSymbolicNamesWithNumbersWithoutCurrentFlagPicksFirstRelease() throws Exception {
+    public void projecWithTwoReleasesUsingSymbolicNamesWithNumbersWithoutCurrentFlagPicksMostRecentRelease()
+            throws Exception {
 
         releases.add(new ProjectRelease("Angel-SR6", ReleaseStatus.GENERAL_AVAILABILITY, false, "", "", "", ""));
         releases.add(new ProjectRelease("Brixton-SR2", ReleaseStatus.GENERAL_AVAILABILITY, false, "", "", "", ""));
         ResponseEntity<byte[]> response = controller.releaseBadge("spring-data-redis");
 
         String content = new String(response.getBody());
-        assertThat(content, containsString("Angel-SR6"));
+        assertThat(content, containsString("Brixton-SR2"));
     }
 
     @Test
@@ -140,7 +140,7 @@ public class BadgeControllerTest {
         ResponseEntity<byte[]> response = controller.releaseBadge("spring-data-redis");
 
         String content = new String(response.getBody());
-        assertThat(content, containsString("Angel-SR6"));
+        assertThat(content, containsString("Brixton-RELEASE"));
     }
 
     @Test

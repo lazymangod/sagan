@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.social.github.api.GitHubRepo;
-import org.springframework.util.Assert;
 import org.springframework.web.client.RestClientException;
 import sagan.guides.GettingStartedGuide;
 import sagan.guides.Guide;
@@ -64,7 +63,7 @@ public class GettingStartedGuidesTests {
         given(org.getReadme(anyString())).willReturn(readme);
         given(org.getRepoInfo(GUIDE_REPO_NAME)).willReturn(REPO_INFO);
         given(org.getAsciidocGuide("/repos/mock-org/gs-rest-service/zipball")).willReturn(
-                new AsciidocGuide("Awesome Guide", new HashSet<>(), new HashSet<>(), "Table of C", new HashMap<>()));
+                new AsciidocGuide("Awesome Guide", "Table of C"));
         GettingStartedGuide guide = gsGuides.find(GUIDE_ID);
         assertThat(guide.getTitle(), equalTo("Awesome Guide"));
     }
@@ -76,7 +75,7 @@ public class GettingStartedGuidesTests {
         given(org.getReadme(anyString())).willReturn(readme);
         given(org.getRepoInfo(GUIDE_REPO_NAME)).willReturn(REPO_INFO);
         given(org.getAsciidocGuide("/repos/mock-org/gs-rest-service/zipball")).willReturn(
-                new AsciidocGuide("Awesome Guide", new HashSet<>(), new HashSet<>(), "Table of C", new HashMap<>()));
+                new AsciidocGuide("Awesome Guide", "Table of C"));
         GettingStartedGuide guide = gsGuides.find(GUIDE_ID);
         assertThat(guide.getSubtitle(), equalTo("Learn awesome stuff with this guide"));
     }

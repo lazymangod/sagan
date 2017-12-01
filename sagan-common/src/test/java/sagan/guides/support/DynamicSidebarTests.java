@@ -1,6 +1,5 @@
 package sagan.guides.support;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import sagan.support.github.GitHubClient;
 
 import java.io.IOException;
@@ -13,6 +12,8 @@ import org.mockito.Mock;
 
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.StreamUtils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
@@ -32,7 +33,7 @@ public class DynamicSidebarTests {
     @Before
     public void setup() throws IOException {
         initMocks(this);
-        org = new GuideOrganization("spring-guides", "orgs", github, new ObjectMapper());
+        org = new GuideOrganization("spring-guides", "orgs", github, new ObjectMapper(), null);
     }
 
     @Test
@@ -46,16 +47,8 @@ public class DynamicSidebarTests {
 
         AsciidocGuide guide = org.getAsciidocGuide(README_REST_ZIPBALL);
 
-        assertThat(guide.getTags(), hasItems("rest", "json", "springmvc"));
-        assertThat(guide.getTags(), not(hasItems("reactor", "data")));
-        assertThat(guide.getProjects(), empty());
         assertThat(guide.getTableOfContents(), startsWith("<ul class=\"sectlevel1\">"));
         assertThat(guide.getTableOfContents(), not(containsString("<ul class=\"sectlevel2\">")));
-        assertThat(guide.getUnderstandingDocs().keySet(), hasItems("/understanding/JSON", "/understanding/WAR",
-                "/understanding/view-templates", "/understanding/application-context", "/understanding/REST",
-                "/understanding/Tomcat"));
-        assertThat(guide.getUnderstandingDocs().values(), hasItems("JSON", "WAR", "View Technology",
-                "Spring Application Context", "RESTful Web Service", "Tomcat"));
         assertThat(guide.getContent(), containsString("About 15 minutes"));
     }
 
@@ -70,8 +63,6 @@ public class DynamicSidebarTests {
 
         AsciidocGuide guide = org.getAsciidocGuide(README_REST_ZIPBALL);
 
-        assertThat(guide.getTags(), empty());
-        assertThat(guide.getProjects(), empty());
         assertThat(guide.getTableOfContents(), startsWith("<ul class=\"sectlevel1\">"));
         assertThat(guide.getTableOfContents(), not(containsString("<ul class=\"sectlevel2\">")));
         assertThat(guide.getContent(), containsString("About 15 minutes"));
@@ -89,8 +80,6 @@ public class DynamicSidebarTests {
 
         AsciidocGuide guide = org.getAsciidocGuide(README_REST_ZIPBALL);
 
-        assertThat(guide.getTags(), empty());
-        assertThat(guide.getProjects(), empty());
         assertThat(guide.getTableOfContents(), equalTo(""));
         assertThat(guide.getContent(), containsString("About 15 minutes"));
     }
@@ -107,16 +96,8 @@ public class DynamicSidebarTests {
 
         AsciidocGuide guide = org.getAsciidocGuide(README_REST_ZIPBALL);
 
-        assertThat(guide.getTags(), hasItems("rest", "jackson", "json", "springmvc"));
-        assertThat(guide.getProjects(), hasItems("spring-framework"));
-        assertThat(guide.getProjects(), not(hasItems("spring-hateoas")));
         assertThat(guide.getTableOfContents(), startsWith("<ul class=\"sectlevel1\">"));
         assertThat(guide.getTableOfContents(), not(containsString("<ul class=\"sectlevel2\">")));
-        assertThat(guide.getUnderstandingDocs().keySet(), hasItems("/understanding/JSON", "/understanding/WAR",
-                "/understanding/view-templates", "/understanding/application-context", "/understanding/REST",
-                "/understanding/Tomcat"));
-        assertThat(guide.getUnderstandingDocs().values(), hasItems("JSON", "WAR", "View Technology",
-                "Spring Application Context", "RESTful Web Service", "Tomcat"));
         assertThat(guide.getContent(), containsString("About 15 minutes"));
     }
 

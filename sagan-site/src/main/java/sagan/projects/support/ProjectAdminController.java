@@ -1,25 +1,22 @@
 package sagan.projects.support;
 
-import sagan.projects.Project;
-import sagan.projects.ProjectRelease;
-import sagan.support.nav.Navigation;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import javax.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import sagan.blog.PostFormat;
+import sagan.blog.support.FormatAwarePostContentRenderer;
+import sagan.projects.Project;
+import sagan.projects.ProjectRelease;
+import sagan.projects.ProjectSample;
+import sagan.support.nav.Navigation;
 import sagan.support.nav.Section;
+
+import javax.validation.Valid;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
@@ -31,18 +28,18 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
  */
 @Controller
 @RequestMapping("/admin/projects")
-@Navigation(Section.PROJECTS)
-class ProjectAdminController {
-    private static final String VERSION_PLACEHOLDER = "{version}";
-    private static final String VERSION_PATTERN = Pattern.quote(VERSION_PLACEHOLDER);
+@Navigation(Section.PROJECTS) class ProjectAdminController {
     private static final List<String> CATEGORIES =
             Collections.unmodifiableList(Arrays.asList("incubator", "active", "attic", "community"));
 
     private ProjectMetadataService service;
 
+    private final FormatAwarePostContentRenderer renderer;
+
     @Autowired
-    public ProjectAdminController(ProjectMetadataService service) {
+    public ProjectAdminController(ProjectMetadataService service, FormatAwarePostContentRenderer renderer) {
         this.service = service;
+        this.renderer = renderer;
     }
 
     @RequestMapping(value = "", method = GET)
@@ -66,7 +63,6 @@ class ProjectAdminController {
                 "http://github.com/spring-projects/spring-new",
                 "http://projects.spring.io/spring-new",
                 new ArrayList<>(Arrays.asList(release)),
-                false,
                 CATEGORIES.get(0));
 
         return edit(project, model);
@@ -86,41 +82,81 @@ class ProjectAdminController {
 
     private String edit(Project project, Model model) {
         if (project == null) {
-            return "pages/404";
+            return "error/404";
         }
 
-        for (ProjectRelease release : project.getProjectReleases()) {
-            String version = release.getVersion();
-            release.setApiDocUrl(release.getApiDocUrl().replaceAll(version, VERSION_PLACEHOLDER));
-            release.setRefDocUrl(release.getRefDocUrl().replaceAll(version, VERSION_PLACEHOLDER));
-        }
+        denormalizeProjectReleases(project);
 
         List<ProjectRelease> releases = project.getProjectReleases();
         if (!releases.isEmpty()) {
             model.addAttribute("groupId", releases.get(0).getGroupId());
         }
+
+        int nextAvailableSampleDisplayOrder = project.getProjectSamples()
+                .stream()
+                .mapToInt(ProjectSample::getDisplayOrder)
+                .max()
+                .orElse(0) + 1;
+
         model.addAttribute("project", project);
         model.addAttribute("categories", CATEGORIES);
+        model.addAttribute("projectSampleDisplayOrder", nextAvailableSampleDisplayOrder);
         return "admin/project/edit";
     }
 
     @RequestMapping(value = "{id}", method = POST)
-    public String save(@Valid Project project, @RequestParam(defaultValue = "") List<String> releasesToDelete,
-                       @RequestParam String groupId) {
+    public String save(@Valid Project project,
+                       @RequestParam(defaultValue = "") List<String> releasesToDelete,
+                       @RequestParam(defaultValue = "") List<Integer> samplesToDelete,
+                       @RequestParam String groupId,
+                       @RequestParam(required = false) String parentId) {
         Iterator<ProjectRelease> iReleases = project.getProjectReleases().iterator();
         while (iReleases.hasNext()) {
             ProjectRelease release = iReleases.next();
             if ("".equals(release.getVersion()) || releasesToDelete.contains(release.getVersion())) {
                 iReleases.remove();
             }
-            release.setGroupId(groupId);
-            String version = release.getVersion();
-            release.setApiDocUrl(release.getApiDocUrl().replaceAll(VERSION_PATTERN, version));
-            release.setRefDocUrl(release.getRefDocUrl().replaceAll(VERSION_PATTERN, version));
-
         }
+        normalizeProjectReleases(project, groupId);
+
+        String renderedBootConfig = this.renderer.render(project.getRawBootConfig(), PostFormat.ASCIIDOC);
+        project.setRenderedBootConfig(renderedBootConfig);
+        String renderedOverview = this.renderer.render(project.getRawOverview(), PostFormat.ASCIIDOC);
+        project.setRenderedOverview(renderedOverview);
+
+        if (parentId != null) {
+            Project parentProject = service.getProject(parentId);
+            project.setParentProject(parentProject);
+        }
+
+        project.setProjectSamples(
+                project.getProjectSamples()
+                        .stream()
+                        .filter(ps -> !(ps.getTitle().isEmpty() || ps.getUrl().isEmpty()))
+                        .filter(ps -> !samplesToDelete.contains(ps.getDisplayOrder()))
+                        .collect(Collectors.toList())
+        );
+
         service.save(project);
 
         return "redirect:" + project.getId();
     }
+
+    private void normalizeProjectReleases(Project project, String groupId) {
+        for (ProjectRelease release : project.getProjectReleases()) {
+            if (groupId != null) {
+                release.setGroupId(groupId);
+            }
+            release.replaceVersionPattern();
+        }
+    }
+
+    private void denormalizeProjectReleases(Project project) {
+        List<ProjectRelease> releases = new ArrayList<>();
+        for (ProjectRelease release : project.getProjectReleases()) {
+            releases.add(release.createWithVersionPattern());
+        }
+        project.setProjectReleases(releases);
+    }
+
 }

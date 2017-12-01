@@ -20,9 +20,7 @@ spring:
   thymeleaf:
     mode: LEGACYHTML5
   jpa:
-    show_sql: false
     hibernate:
-      naming_strategy: org.hibernate.cfg.EJB3NamingStrategy
       ddl_auto: none
 
 security:
@@ -36,7 +34,6 @@ security:
     - /img/**
     - /500
     - /404
-    - /project_metadata/**
   headers:
     hsts: domain
   user:
@@ -102,13 +99,10 @@ spring:
 security:
   require_ssl: true
 server:
-  # when deployed to CloudFoundry, tomcat is behind a CDN proxy
-  tomcat:
-    remote_ip_header: x-forwarded-for
-    protocol_header: x-forwarded-proto
   compression:
     enabled: true
     mime-types: application/javascript,text/css,application/json
+  use-forward-headers: true
 
 ---
 
@@ -122,9 +116,9 @@ spring:
       additional_paths:
         - ../sagan-client/src/
       additional_exclude: "**/*.js,**/*.css"
-
-
 disqus_shortname: ${DISQUS_SHORTNAME:spring-io-localhost}
+flyway:
+  locations: classpath:/db/migration, classpath:/db/dev
 ---
 
 spring:
